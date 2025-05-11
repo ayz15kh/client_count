@@ -1,37 +1,53 @@
 import telebot
+import config
 from telebot import types
 
-bot = telebot.TeleBot('7761168261:AAGBby_W9zuqezI49tBne_gNsLxkLzeO86o')
+bot = telebot.TeleBot(config.api)
 list_operation = []
-
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(
+    buttons = [
+        types.KeyboardButton('Мои записи📅'),
         types.KeyboardButton('Запись на приём👨‍⚕️'),
-        types.KeyboardButton('Отменить или перенести❌'),
-        types.KeyboardButton('Информацияℹ️ и цены💰'),
+        types.KeyboardButton('Мои бонусы🎁'),
+        types.KeyboardButton('Отмена/перенос❌'),
+        types.KeyboardButton('Услуги и цены💰'),
+        types.KeyboardButton('Отзывы⭐️'),
         types.KeyboardButton('Чат с клиникой💬'),
-        types.KeyboardButton('История посещений📅'),
-        types.KeyboardButton('Отзывы⭐️')
-    )
-    bot.send_message(message.chat.id,text='🌟 Добро пожаловать в профиль Дантист Бота! 🌟 Мы рады видеть вас здесь! 🦷 Что я могу для вас сделать?',reply_markup=markup)
+        types.KeyboardButton('История📝')
+    ]
+    markup.add(buttons[0], buttons[1])
+    markup.add(buttons[2], buttons[3])
+    markup.add(buttons[4], buttons[5])
+    markup.add(buttons[6], buttons[7])
 
+    inline_markup = types.InlineKeyboardMarkup()
+    inline_btn = types.InlineKeyboardButton('Записаться на бесплатную консультацию', callback_data='free_consultation')
+    inline_markup.add(inline_btn)
+
+
+    bot.send_message(message.chat.id, text="<b>🌟 Добро пожаловать в профиль Дантист Бота!</b> 🌟\n"
+        "<i>Мы рады видеть вас здесь! \n</i>", reply_markup=markup, parse_mode= 'HTML')
+    bot.send_message(message.chat.id, "С помощью этого бота вы можете записаться в клинику и получить всю необходимую информацию о наших услугах.", reply_markup=inline_markup)
+    #bot.send_message(message.chat.id,' ', reply_markup=inline_markup)
+
+@bot.callback_query_handler(func=lambda call: call.data == 'free_consultation')
+def callback_inline(call):
+    bot.send_message(call.message.chat.id, "Отлично! Вы записаны на бесплатную консультацию.")
 
 @bot.message_handler(content_types=['text'])
 def handle_text(message):
     if message.text == 'Запись на приём👨‍⚕️':
         service(message)
-    elif message.text in ['10:00', '11:00', '12:00', '14:00', '15:00']:
-        confirm_appoint(message)
-    elif message.text == 'Отменить или перенести❌':
+    elif message.text == 'Отмена/перенос❌':
         cancel_appoint(message)
-    elif message.text == 'Информацияℹ️ и цены💰':
+    elif message.text == 'Услуги и цены💰':
         show_prices(message)
     elif message.text == 'Чат с клиникой💬':
-        bot.send_message(message.chat.id, "Переходите в чат с клиникой: (https://t.me/mgdmer)")
-    elif message.text == 'История посещений📅':
+        bot.send_message(message.chat.id, "Напишите ваш вопрос, администратор ответит вам в ближайшее время")
+    elif message.text == 'Мои записи📅':
         show_visit_history(message)
     elif message.text == 'Отзывы⭐️':
         show_reviews(message)
@@ -43,93 +59,122 @@ def handle_text(message):
         start_message(message)
     elif message.text == 'Отмена':
         start_message(message)
-
+    elif message.text == 'Мои бонусы🎁':
+        bot.send_message(message.chat.id,  "1 бонус - 1 рубль\n"
+                                                "1000 бонусов при регистрации\n"
+                                                "500 бонусов за друга\n"
+                                                "500 бонусов за 1(платное) посещение\n")
+        bot.send_message(message.chat.id, 'Вы получили 500 бонусов за регистрацию')
+    elif message.text == 'История📝':
+        bot.send_message(message.chat.id, 'Ваша текущая история посещений:')
+    else:
+        callback_appoint(message)
 
 def service(message):
-    markup = types.InlineKeyboardMarkup()
+    inline_markup = types.InlineKeyboardMarkup()
+    buttons = [
+        types.InlineKeyboardButton('Протезирование', callback_data='prosthetics'),
+        types.InlineKeyboardButton('Чистка', callback_data='cleaning'),
+        types.InlineKeyboardButton('Ортодонтия', callback_data='orthodontics'),
+        types.InlineKeyboardButton('Консультация', callback_data='consultation'),
+        types.InlineKeyboardButton('Имплантация', callback_data='implantation'),
+        types.InlineKeyboardButton('Специалисты', callback_data='specialists')
+    ]
+    inline_markup.add(buttons[3])
+    inline_markup.add(buttons[1])
+    inline_markup.add(buttons[2])
+    inline_markup.add(buttons[0])
+    inline_markup.add(buttons[4])
+    inline_markup.add(buttons[5])
 
-    services = ['Протезирование', 'Чистка', 'Ортодонтия', 'Консультация', 'Имплантация', 'Специалисты']
-    for i in services:
-        markup.add(types.InlineKeyboardButton(i, callback_data=i.lower()))
+    bot.send_message(message.chat.id, 'Выберите услугу:', reply_markup=inline_markup)
 
-    bot.send_message(message.chat.id, 'Выберите услугу:', reply_markup=markup)
-
-
-
-@bot.callback_query_handler(func=lambda call: True)
-
+@bot.callback_query_handler(func=lambda call: call.data in ['prosthetics', 'cleaning', 'orthodontics', 'consultation', 'implantation', 'specialists'])
 def callback_appoint(call):
-    if call.data == 'Специалисты':
-        bot.send_message(call.message.chat.id, 'easfgegsggesgesges')
-        bot.send_photo(call.message.chat.id, 'https://specialistlanguagecourses.com/wp-content/uploads/2021/12/shutterstock_519507367-scaled.jpg', 'wfdwf')
+    if call.data == 'specialists':
+        bot.send_message(call.message.chat.id, 'Информация о специалистах')
+        bot.send_message(call.message.chat.id, 'https://dental.clinic23.ru/nashi-spetsialisty')
     else:
-        if call.data == 'консультация':
+        if call.data == 'consultation':
             bot.send_message(call.message.chat.id, 'Первое посещение бесплатно!')
-        markup = create_time_keyboard()
-        bot.send_message(call.message.chat.id, 'Выберите время для записи:', reply_markup=markup)
+        bot.send_message(call.message.chat.id, "Пожалуйста, введите желаемую дату приема")
+def process_time(message, date):
+    time = message.text
+    confirm_appoint(message, date, time)
 
+def confirm_appoint(message, date, time):
+    global list_operation
+    appointment = f'{date} в {time}'
+    bot.send_message(message.chat.id, f'Вы записаны на приём {appointment}.')
+    bot.send_message(message.chat.id, 'г. Краснодар, ул. Кубанская Набережная, д. 37/1')
+    bot.send_message(message.chat.id, 'https://yandex.ru/maps/-/CHFlqLMz')
+    list_operation.append(appointment)
 
 def create_time_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     times = ['10:00', '11:00', '12:00', '14:00', '15:00', 'Отмена']
-    for i in times:
-        markup.add(i)
+    markup.add(*times)
     return markup
 
-
-def confirm_appoint(message):
-    global list_operation
-    bot.send_message(message.chat.id, f'Вы записаны на приём в {message.text}.')
-    bot.send_message(message.chat.id, 'г. Краснодар, ул. Кубанская Набережная, д. 37/1')
-    bot.send_message(message.chat.id, 'https://yandex.ru/maps/-/CHFlqLMz')
-    list_operation += str(message.text)
-
 def cancel_appoint(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add('Да', 'Нет')
-    bot.send_message(message.chat.id, 'Вы уверены что хотите отменить запись?', reply_markup=markup )
+    markup = types.InlineKeyboardMarkup()
+    b1 = types.InlineKeyboardButton('Да', callback_data = 'Yes')
+    b2 = types.InlineKeyboardButton('Нет', callback_data='No')
+    markup.add(b1, b2)
+    bot.send_message(message.chat.id, 'Вы уверены что хотите отменить запись?', reply_markup=markup)
+
+def process_cancel_step(message):
+    if message.text == 'Да':
+        global list_operation
+        if list_operation:
+            list_operation.pop()
+            bot.send_message(message.chat.id, 'Последняя запись успешно отменена.')
+        else:
+            bot.send_message(message.chat.id, 'У вас нет активных записей для отмены.')
+        start_message(message)
+    elif message.text == 'Нет':
+        bot.send_message(message.chat.id, 'Запись не отменена. Вы можете продолжить пользоваться ботом.')
+        start_message(message)
 
 def show_visit_history(message):
-    if len(list_operation) != 0:
-        bot.send_message(message.chat.id, f'Записи: {list_operation}')
+    if list_operation:
+        bot.send_message(message.chat.id, f'Записи: {", ".join(list_operation)}')
     else:
         bot.send_message(message.chat.id, 'На данный момент у вас нет записей')
 
+
 def show_reviews(message):
-    bot.send_message(message.chat.id, f"Посмотреть отзывы можно по следующей ссылке: https://yandex.ru/maps/org/klinika_yekaterininskaya_tsentr_stomatologii/224189762833/reviews/?ll=38.959189%2C45.025062&z=16")
+    bot.send_message(message.chat.id,f"Посмотреть отзывы можно по следующей ссылке: https://yandex.ru/maps/org/klinika_yekaterininskaya_tsentr_stomatologii/224189762833/reviews/?ll=38.959189%2C45.025062&z=16")
 
 
-@bot.message_handler(func=lambda message: message.text == 'Информация и цены')
+@bot.message_handler(func=lambda message: message.text == 'Услуги и цены💰')
 def show_prices(message):
-    prices_info = (
-        "Ортодонтия:\n"
-        "Прием (осмотр, консультация) врача-ортодонта первичный - 2000 ₽\n"
-        "Прием (осмотр, консультация) врача-ортодонта повторный - 1500 ₽\n"
+    prices_info = """
+    🦷ОРТОДОНТИЯ
+    - Первичный прием (осмотр, консультация): Бесплатно
+    - Повторный прием (осмотр, консультация): 1500 ₽
 
-        "Протезирование:\n"
-        "Снятие оттиска с одной челюсти (закрытой ложкой) - 2500 ₽\n"
-        "Снятие оттиска с одной челюсти (открытой ложкой) - 3500 ₽\n"
-        "Протезирование зуба с использованием имплантата (абатмент Emax) - 18000 ₽\n"
-        "Протезирование зуба с использованием имплантата (циркониевый абатмент) - 20000 ₽\n"
-        "Протезирование зуба с использованием имплантата (временная коронка на временном абатменте) - 20000 ₽\n"
-        "Протезирование зуба с использованием имплантата (винтовая фиксация) - 37000 ₽\n"
-        "Протезирование зуба с использованием имплантата (Коронка на титановом основании с цементной фиксацией) - 37000 ₽\n\n"
+    🦷ПРОТЕЗИРОВАНИЕ
+    - Снятие оттиска с одной челюсти (закрытой ложкой): 2500 ₽
+    - Протезирование зуба с использованием имплантата (абатмент Emax): 18000 ₽
+    - Протезирование зуба с использованием имплантата (винтовая фиксация): 37000 ₽
+    - Протезирование зуба с использованием имплантата (временная коронка на временном абатменте) - 20000 ₽
+    - Протезирование зуба с использованием имплантата (Коронка на титановом основании с цементной фиксацией) - 37000 ₽
 
-        "Имплантация:\n"
-        "Прием (осмотр, консультация) врача-стоматолога-хирурга первичный - 1500 ₽\n"
-        "Внутрикостная дентальная имплантация (Paltop (США)) - 52000 ₽\n\n"
+    🦷ИМПЛАНТАЦИЯ
+    - Прием (осмотр, консультация) врача-стоматолога-хирурга: Бесплатно
+    - Внутрикостная дентальная имплантация (Paltop (США)): 52000
 
-        "Консультация:\n"
-        "Прием (осмотр, консультация) врача-стоматолога - 700 ₽\n"
-        "Профилактический прием (осмотр, консультация) врача-стоматолога - 1000 ₽\n\n"
-        "Чистка:\n"
+    🦷КОНСУЛЬТАЦИЯ
+    - Прием (осмотр, консультация) врача-стоматолога: Бесплатно
 
-        "Обучение гигиене полости рта и зубов индивидуальное, подбор средств и предметов гигиены полости рта - 600 ₽\n"
-        "Прием (осмотр, консультация) врача-стоматолога повторный - 700 ₽\n"
-        "Профилактический прием (осмотр, консультация) врача-стоматолога - 1000 ₽"
-    )
+    🦷ЧИСТКА
+    - Обучение гигиене полости рта и зубов, подбор средств и предметов гигиены: 600 ₽
+
+    ✨Мы готовы помочь вам с уходом за зубами и восстановлением улыбки.
+    """
+
     bot.send_message(message.chat.id, prices_info)
-
 
 if __name__ == '__main__':
     bot.infinity_polling()
