@@ -9,7 +9,7 @@ list_operation = []
 def start_message(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = [
-        types.KeyboardButton('Мои записи📅'),
+        types.KeyboardButton('записи📅'),
         types.KeyboardButton('Запись на приём👨‍⚕️'),
         types.KeyboardButton('Мои бонусы🎁'),
         types.KeyboardButton('Отмена/перенос❌'),
